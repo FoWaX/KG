@@ -80,7 +80,7 @@ namespace Sinelnikov2 {
 	float aspectFig = Vx / Vy; // соотношение сторон рисунка
 
 	float lines1[] = {
-		//морковка контур
+		//морковка
 		2.f,0.5f,1.5f,2.f,
 		1.5f,2.f,1.f,3.f,
 		1.f,3.f,0.5f,5.f,
@@ -105,6 +105,7 @@ namespace Sinelnikov2 {
 		2.5f,3.5f,2.f,2.5f,
 		2.f,2.5f,2.5f,1.5f,
 		2.5f,1.5f,2.f,0.5f,
+		1.5f,7.f,2.5,7.f,
 		//кролик контур
 		2.5f,1.5f,3.f,0.5f,
 		3.f,0.5f,4.f,0.5f,
@@ -119,9 +120,9 @@ namespace Sinelnikov2 {
 		8.5f,3.f,8.5f,3.5f,
 		8.5f,3.5f,7.5f,6.5f,
 		7.5f,6.5f,8.f,8.f,
-		8.f,8.f,7.5f,8.8f,
-		7.5f,8.8f,8.5f,9.f,
-		8.5f,9.f,9.f,6.f,
+		8.f,8.f,7.65f,8.85f,
+		7.5f,8.75f,8.f,9.f,
+		8.f,9.f,9.f,6.f,
 		9.f,6.f,10.5f,9.f,
 		10.5f,9.f,8.5f,11.5f,
 		8.5f,11.5f,7.5f,10.5f,
@@ -138,7 +139,9 @@ namespace Sinelnikov2 {
 		5.5f,11.f,6.f,10.f,
 		6.f,10.f,3.f,8.5f,
 		3.f,8.5f,3.f,8.f,
-		3.f,8.f,5.5f,6.f,
+		3.f,8.f,3.25f,7.5f,
+		3.25f,7.5f,4.75f,6.35f,
+		4.75f,6.35f,5.5f,6.f,
 		5.5f,6.f,5.f,5.5f,
 		5.f,5.5f,4.f,6.5f,
 		4.f,6.5f,3.5f,6.5f,
@@ -147,7 +150,39 @@ namespace Sinelnikov2 {
 		5.f,5.f,3.5f,6.5f,
 		3.5f,5.f,5.f,4.25f,
 		5.f,4.25f,5.f,4.f,
-		3.25f,3.9f,3.5f,4.f
+		3.25f,3.9f,3.5f,4.f,
+		3.5f,4.f,4.f,4.f,
+		3.5f,4.f,4.5f,3.f,
+		4.5f,3.f,4.f,2.f,
+		4.f,2.f,3.5f,2.f,
+		4.f,2.f,4.5f,2.f,
+		4.5f,2.f,5.5f,2.5f,
+		4.f,4.f,5.f,3.5f,
+		5.f,3.5f,4.5f,2.5f,
+		4.5f,2.5f,5.25f,3.f,
+		5.f,4.f,5.5f,2.5f,
+		//штаны кролика
+		5.5f,2.5f,7.5f,1.f,
+		5.f,4.f,6.5f,3.5f,
+		6.5f,3.5f,8.5f,3.5f,
+		8.5f,3.f,8.5f,1.5f,
+		//то что на голове и лице
+		8.f,9.f,8.f,10.f,
+		7.5f,8.75f,7.f,8.25f,
+		7.25f,10.f,7.f,9.5f,
+		6.f,10.f,7.f,10.f,
+		5.5f,6.f,7.5f,6.5f,
+		3.25f,7.5f,4.f,9.f,
+		4.75f,6.35f,6.25f,6.85f,
+		6.25f,6.85f,6.75f,7.25f,
+		6.5f,7.5f,7.f,7.f,
+		5.f,8.5f,5.5f,8.f,
+		5.f,8.5f,5.75f,9.25f,
+		5.f,8.5f,5.75f,8.5f,
+		5.75f,8.5f,5.75f,9.25f,
+		5.75f,9.25f,6.25f,9.25f,
+		6.25f,9.25f,6.25f,8.5f,
+		5.5f, 8.f, 6.25f, 8.5f
 	};
 	unsigned int arrayLength1 = sizeof(lines1) / sizeof(float);
 	float Vx1 = 11.f; // размер рисунка по горизонтали
@@ -184,7 +219,7 @@ namespace Sinelnikov2 {
 		/// <summary>
 		/// Обязательная переменная конструктора.
 		/// </summary>
-		System::ComponentModel::Container ^components;
+		System::ComponentModel::Container^ components;
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -282,4 +317,3 @@ namespace Sinelnikov2 {
 	}
 	};
 }
-
