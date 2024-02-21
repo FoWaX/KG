@@ -189,6 +189,14 @@ namespace Sinelnikov2 {
 	float Vy1 = 13.f; // размер рисунка по вертикали
 	float aspectFig1 = Vx1 / Vy1; // соотношение сторон рисунка
 
+
+	mat3 T = mat3(1.f); // матрица, в которой накапливаются все преобразования
+	// первоначально - единичная матрица
+	mat3 initT; // матрица начального преобразования
+	
+	mat3 T_1 = mat3(1.f); 
+	mat3 initT_1; 
+
 	/// <summary>
 	/// Сводка для MyForm
 	/// </summary>
@@ -269,10 +277,18 @@ namespace Sinelnikov2 {
 				Sx = Wx / Vx; // коэффициент увеличения по оси Ox
 				Sy = Wy / Vy; // коэффициент увеличения по оси Oy
 			}
-			float Ty = Sy * Vy; // смещение в положительную сторону по оси Oy после смены знака
+			float Ty = Sy * Vy;
+			initT = translate(0.f, Ty) * scale(Sx, -Sy); // преобразования применяются справа налево
+			// сначала масштабирование, а потом перенос
+			// в initT совмещаем эти два преобразования
+			mat3 M = T * initT; // совмещение начального преобразования и
+			// накопленных преобразований
 			for (int i = 0; i < arrayLength; i += 4) {
-				g->DrawLine(blackPen, Sx * lines[i], Ty - Sy * lines[i + 1],
-					Sx * lines[i + 2], Ty - Sy * lines[i + 3]);
+				vec3 A = vec3(lines[i], lines[i + 1], 1.f); // начало отрезка в однородных координатах
+				vec3 B = vec3(lines[i + 2], lines[i + 3], 1.f); // конец отрезка в однородных координатах
+				vec2 a = normalize(M * A); // начало отрезка после преобразования
+				vec2 b = normalize(M * B); // конец отрезка после преобразования
+				g->DrawLine(blackPen, a.x, a.y, b.x, b.y); // отрисовка отрезка
 			}
 		}
 		else {
@@ -285,9 +301,17 @@ namespace Sinelnikov2 {
 				Sy = Wy / Vy1; // коэффициент увеличения по оси Oy
 			}
 			float Ty = Sy * Vy1; // смещение в положительную сторону по оси Oy после смены знака
+			initT_1 = translate(0.f, Ty) * scale(Sx, -Sy); // преобразования применяются справа налево
+			// сначала масштабирование, а потом перенос
+			// в initT совмещаем эти два преобразования
+			mat3 M_1 = T_1 * initT_1; // совмещение начального преобразования и
+			// накопленных преобразований
 			for (int i = 0; i < arrayLength1; i += 4) {
-				g->DrawLine(blackPen, Sx * lines1[i], Ty - Sy * lines1[i + 1],
-					Sx * lines1[i + 2], Ty - Sy * lines1[i + 3]);
+				vec3 A = vec3(lines1[i], lines1[i + 1], 1.f); // начало отрезка в однородных координатах
+				vec3 B = vec3(lines1[i + 2], lines1[i + 3], 1.f); // конец отрезка в однородных координатах
+				vec2 a = normalize(M_1 * A); // начало отрезка после преобразования
+				vec2 b = normalize(M_1 * B); // конец отрезка после преобразования
+				g->DrawLine(blackPen, a.x, a.y, b.x, b.y); // отрисовка отрезка
 			}
 		}
 	}
@@ -306,9 +330,45 @@ namespace Sinelnikov2 {
 		default:
 			break;
 		}
+		
 		switch (e->KeyCode) {
 		case Keys::N:
 			UpdateImage = !UpdateImage;
+			break;
+		default:
+			break;
+		}
+
+		float Wcx = ClientRectangle.Width / 2.f; // координаты центра
+		float Wcy = ClientRectangle.Height / 2.f; // текущего окна
+
+		switch (e->KeyCode) {
+		case Keys::Q:
+			T = translate(-Wcx, -Wcy) * T; // перенос начала координат в (Wcx, Wcy)
+			T = rotate(0.01f) * T; // поворот на 0.01 радиан относительно
+			// нового центра
+			T = translate(Wcx, Wcy) * T; // перенос начала координат обратно
+
+			T_1 = translate(-Wcx, -Wcy) * T_1;
+			T_1 = rotate(0.01f) * T_1; 
+			T_1 = translate(Wcx, Wcy) * T_1;
+		default:
+			break;
+		}
+
+		switch (e->KeyCode) {
+		case Keys::W:
+			T = translate(0.f, -1.f) * T; // сдвиг вверх на один пиксел
+			T_1 = translate(0.f, -1.f) * T_1;
+			break;
+		default:
+			break;
+		}
+
+		switch (e->KeyCode) {
+		case Keys::Escape:
+			T = mat3(1.f); // присвоили T единичную матрицу
+			T_1 = mat3(1.f); // присвоили T единичную матрицу
 			break;
 		default:
 			break;
