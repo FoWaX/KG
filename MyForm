@@ -9,6 +9,7 @@ namespace Sinelnikov2 {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace std;
 
 	float lines[] = {
 		// голова
@@ -74,10 +75,6 @@ namespace Sinelnikov2 {
 		2.5f,2.5f,2.25f,2.f, // нос справа
 		2.25f,2.f,2.f,2.5f // нос слева
 	};
-	unsigned int arrayLength = sizeof(lines) / sizeof(float);
-	float Vx = 8.5f; // размер рисунка по горизонтали
-	float Vy = 8.5f; // размер рисунка по вертикали
-	float aspectFig = Vx / Vy; // соотношение сторон рисунка
 
 	float lines1[] = {
 		//морковка
@@ -184,18 +181,14 @@ namespace Sinelnikov2 {
 		6.25f,9.25f,6.25f,8.5f,
 		5.5f, 8.f, 6.25f, 8.5f
 	};
-	unsigned int arrayLength1 = sizeof(lines1) / sizeof(float);
-	float Vx1 = 11.f; // размер рисунка по горизонтали
-	float Vy1 = 13.f; // размер рисунка по вертикали
-	float aspectFig1 = Vx1 / Vy1; // соотношение сторон рисунка
 
 
-	mat3 T = mat3(1.f); // матрица, в которой накапливаются все преобразования
-	// первоначально - единичная матрица
-	mat3 initT; // матрица начального преобразования
-	
-	mat3 T_1 = mat3(1.f); 
-	mat3 initT_1; 
+	float Vx; // размер рисунка по горизонтали
+	float Vy; // размер рисунка по вертикали
+	float aspectFig; // соотношение сторон рисунка
+	vector<path> figure;
+	mat3 T; // матрица, в которой накапливаются все преобразования
+	mat3 initT;
 
 	/// <summary>
 	/// Сводка для MyForm
@@ -222,6 +215,11 @@ namespace Sinelnikov2 {
 				delete components;
 			}
 		}
+	private: System::Windows::Forms::OpenFileDialog^ openFileDialog;
+	private: System::Windows::Forms::Button^ btnOpen;
+	protected:
+
+	protected:
 
 	private:
 		/// <summary>
@@ -236,14 +234,34 @@ namespace Sinelnikov2 {
 		/// </summary>
 		void InitializeComponent(void)
 		{
+			this->openFileDialog = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->btnOpen = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
+			// 
+			// openFileDialog
+			// 
+			this->openFileDialog->DefaultExt = L"txt";
+			this->openFileDialog->Filter = L"Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*";
+			this->openFileDialog->Title = L"Открыть файл";
+			// 
+			// btnOpen
+			// 
+			this->btnOpen->Location = System::Drawing::Point(197, 3);
+			this->btnOpen->Name = L"btnOpen";
+			this->btnOpen->Size = System::Drawing::Size(75, 23);
+			this->btnOpen->TabIndex = 0;
+			this->btnOpen->Text = L"Открыть";
+			this->btnOpen->UseVisualStyleBackColor = true;
+			this->btnOpen->Click += gcnew System::EventHandler(this, &MyForm::btnOpen_Click);
 			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(284, 261);
+			this->Controls->Add(this->btnOpen);
 			this->DoubleBuffered = true;
+			this->KeyPreview = true;
 			this->Name = L"MyForm";
 			this->Text = L"MyForm";
 			this->Load += gcnew System::EventHandler(this, &MyForm::MyForm_Load);
@@ -260,60 +278,23 @@ namespace Sinelnikov2 {
 		Graphics^ g = e->Graphics;
 		g->Clear(Color::Aquamarine);
 
-		float Wx = ClientRectangle.Width; // размер окна по горизонтали
-		float Wy = ClientRectangle.Height; // размер окна по вертикали
-
-		float aspectForm = Wx / Wy; // соотношение сторон окна рисования
-
-		Pen^ blackPen = gcnew Pen(Color::Black, 2);
-		float Sx, Sy;
-		if (UpdateImage)
-		{
-			if (keepAspectRatio) {
-				// коэффициентs увеличения при сохранении исходного соотношения сторон
-				Sx = Sy = aspectFig < aspectForm ? Wy / Vy : Wx / Vx;
-			}
-			else {
-				Sx = Wx / Vx; // коэффициент увеличения по оси Ox
-				Sy = Wy / Vy; // коэффициент увеличения по оси Oy
-			}
-			float Ty = Sy * Vy;
-			initT = translate(0.f, Ty) * scale(Sx, -Sy); // преобразования применяются справа налево
 			// сначала масштабирование, а потом перенос
-			// в initT совмещаем эти два преобразования
-			mat3 M = T * initT; // совмещение начального преобразования и
 			// накопленных преобразований
-			for (int i = 0; i < arrayLength; i += 4) {
-				vec3 A = vec3(lines[i], lines[i + 1], 1.f); // начало отрезка в однородных координатах
-				vec3 B = vec3(lines[i + 2], lines[i + 3], 1.f); // конец отрезка в однородных координатах
-				vec2 a = normalize(M * A); // начало отрезка после преобразования
-				vec2 b = normalize(M * B); // конец отрезка после преобразования
-				g->DrawLine(blackPen, a.x, a.y, b.x, b.y); // отрисовка отрезка
+			for (int i = 0; i < figure.size(); i++) {
+				path lines = figure[i]; // lines - очередная ломаная линия
+
+				Pen^ pen = gcnew Pen(Color::FromArgb(lines.color.x, lines.color.y, lines.color.z));
+				pen->Width = lines.thickness;
+				
+				vec2 start = normalize(T * vec3(lines.vertices[0], 1.0)); // первая начальная точка
+				for (int j = 1; j < lines.vertices.size(); j++) { // цикл по конечным точкам (от единицы)
+					vec2 end = normalize(T * vec3(lines.vertices[j], 1.0)); // конечная точка
+					g->DrawLine(pen, start.x, start.y, end.x, end.y); // отрисовка отрезка
+					start = end; // конечная точка текущего отрезка становится начальной точкой следующего
+				}
 			}
-		}
-		else {
-			if (keepAspectRatio) {
-				// коэффициентs увеличения при сохранении исходного соотношения сторон
-				Sx = Sy = aspectFig1 < aspectForm ? Wy / Vy1 : Wx / Vx1;
-			}
-			else {
-				Sx = Wx / Vx1; // коэффициент увеличения по оси Ox
-				Sy = Wy / Vy1; // коэффициент увеличения по оси Oy
-			}
-			float Ty = Sy * Vy1; // смещение в положительную сторону по оси Oy после смены знака
-			initT_1 = translate(0.f, Ty) * scale(Sx, -Sy); // преобразования применяются справа налево
-			// сначала масштабирование, а потом перенос
-			// в initT совмещаем эти два преобразования
-			mat3 M_1 = T_1 * initT_1; // совмещение начального преобразования и
-			// накопленных преобразований
-			for (int i = 0; i < arrayLength1; i += 4) {
-				vec3 A = vec3(lines1[i], lines1[i + 1], 1.f); // начало отрезка в однородных координатах
-				vec3 B = vec3(lines1[i + 2], lines1[i + 3], 1.f); // конец отрезка в однородных координатах
-				vec2 a = normalize(M_1 * A); // начало отрезка после преобразования
-				vec2 b = normalize(M_1 * B); // конец отрезка после преобразования
-				g->DrawLine(blackPen, a.x, a.y, b.x, b.y); // отрисовка отрезка
-			}
-		}
+
+		
 	}
 	private: System::Void MyForm_Resize(System::Object^ sender, System::EventArgs^ e) {
 		Refresh();
@@ -321,23 +302,61 @@ namespace Sinelnikov2 {
 	private: System::Void MyForm_Load(System::Object^ sender, System::EventArgs^ e) {
 		keepAspectRatio = true; // начальное значение: сохранять соотношение сторон рисунка
 		UpdateImage = true; // начальный рисунок
+
+		float thickness;
+		vec3 color;
+		vector<vec2> vertices;
+		// голова
+		thickness = 2; // толщина линии 2
+		color = vec3(255, 0, 0); // цвет красный
+		// точки
+		vertices.push_back(vec2(0.5f, 3.f));
+		vertices.push_back(vec2(1.f, 4.5f));
+		vertices.push_back(vec2(0.5f, 6.f));
+		vertices.push_back(vec2(0.5f, 7.5f));
+		vertices.push_back(vec2(1.f, 8.f));
+		vertices.push_back(vec2(1.5f, 8.f));
+		vertices.push_back(vec2(2.f, 7.5f));
+		vertices.push_back(vec2(1.5f, 6.f));
+		vertices.push_back(vec2(1.5f, 4.5f));
+		vertices.push_back(vec2(3.f, 4.5f));
+		vertices.push_back(vec2(3.f, 6.f));
+		vertices.push_back(vec2(2.5f, 7.5f));
+		vertices.push_back(vec2(3.f, 8.f));
+		vertices.push_back(vec2(3.5f, 8.f));
+		vertices.push_back(vec2(4.f, 7.5f));
+		vertices.push_back(vec2(4.f, 6.f));
+		vertices.push_back(vec2(3.5f, 4.5f));
+		vertices.push_back(vec2(4.f, 3.f));
+		vertices.push_back(vec2(3.5f, 1.5f));
+		vertices.push_back(vec2(2.5f, 1.f));
+		vertices.push_back(vec2(2.f, 1.f));
+		vertices.push_back(vec2(1.f, 1.5f));
+		vertices.push_back(vec2(0.5f, 3.f));
+		figure.push_back(path(vertices, color, thickness));
+		// левый глаз
+		thickness = 4; // толщина линии 4
+		color = vec3(0, 255, 0); // цвет зеленый
+		// точки
+		vertices.clear();
+		vertices.push_back(vec2(1.5f, 3.5f));
+		vertices.push_back(vec2(1.5f, 3.f));
+		vertices.push_back(vec2(2.f, 3.f));
+		vertices.push_back(vec2(2.f, 3.5f));
+		vertices.push_back(vec2(1.5f, 3.5f));
+		figure.push_back(path(vertices, color, thickness));
+		// правый глаз
+		// цвет и толщина те же
+		vertices.clear();
+		vertices.push_back(vec2(2.5f, 3.5f));
+		vertices.push_back(vec2(2.5f, 3.f));
+		vertices.push_back(vec2(3.f, 3.f));
+		vertices.push_back(vec2(3.f, 3.5f));
+		vertices.push_back(vec2(2.5f, 3.5f));
+		figure.push_back(path(vertices, color, thickness));
+
 	}
 	private: System::Void MyForm_KeyDown(System::Object^ sender, System::Windows::Forms::KeyEventArgs^ e) {
-		switch (e->KeyCode) {
-		case Keys::M:
-			keepAspectRatio = !keepAspectRatio;
-			break;
-		default:
-			break;
-		}
-		
-		switch (e->KeyCode) {
-		case Keys::N:
-			UpdateImage = !UpdateImage;
-			break;
-		default:
-			break;
-		}
 
 		float Wcx = ClientRectangle.Width / 2.f; // координаты центра
 		float Wcy = ClientRectangle.Height / 2.f; // текущего окна
@@ -349,9 +368,6 @@ namespace Sinelnikov2 {
 			// нового центра
 			T = translate(Wcx, Wcy) * T; // перенос начала координат обратно
 
-			T_1 = translate(-Wcx, -Wcy) * T_1;
-			T_1 = rotate(0.01f) * T_1; 
-			T_1 = translate(Wcx, Wcy) * T_1;
 		default:
 			break;
 		}
@@ -359,7 +375,6 @@ namespace Sinelnikov2 {
 		switch (e->KeyCode) {
 		case Keys::W:
 			T = translate(0.f, -1.f) * T; // сдвиг вверх на один пиксел
-			T_1 = translate(0.f, -1.f) * T_1;
 			break;
 		default:
 			break;
@@ -367,13 +382,100 @@ namespace Sinelnikov2 {
 
 		switch (e->KeyCode) {
 		case Keys::Escape:
-			T = mat3(1.f); // присвоили T единичную матрицу
-			T_1 = mat3(1.f); // присвоили T единичную матрицу
+			T = initT;
 			break;
 		default:
 			break;
 		}
 		Refresh();
 	}
-	};
+	
+private: System::Void btnOpen_Click(System::Object^ sender, System::EventArgs^ e) {
+	if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+		// в файловом диалоге нажата кновка OK
+		// перезапись имени файла из openFileDialog->FileName в fileName
+		wchar_t fileName[1024]; // переменная, в которой посимвольно сохраним имя файла
+		for (int i = 0; i < openFileDialog->FileName->Length; i++)
+			fileName[i] = openFileDialog->FileName[i];
+		fileName[openFileDialog->FileName->Length] = '\0';
+
+		// объявление и открытие файла
+		ifstream in;
+		in.open(fileName);
+		if (in.is_open()) {
+			figure.clear(); // очищаем имеющийся список ломаных
+// временные переменные для чтения из файла
+			float thickness = 2; // толщина со значением по умолчанию 2
+			float r, g, b; // составляющие цвета
+			r = g = b = 0; // значение составляющих цвета по умолчанию (черный)
+
+			// непосредственно работа с файлом
+			string str; // строка, в которую считываем строки файла
+			getline(in, str); // считываем из входного файла первую строку
+			while (in) { // если очередная строка считана успешно
+			// обрабатываем строку
+				// считываем очередную строку
+
+				if ((str.find_first_not_of(" \t\r\n") != string::npos) && (str[0] != '#')) {
+					// прочитанная строка не пуста и не комментарий
+					stringstream s(str); // строковый поток из строки str
+					string cmd; // переменная для имени команды
+					s >> cmd; // считываем имя команды
+
+					if (cmd == "frame") {
+						s >> Vx >> Vy; // считываем глобальные значение Vx и Vy
+						aspectFig = Vx / Vy; // обновление соотношения сторон// размеры изображения
+						float Wx = ClientRectangle.Width; // размер окна по горизонтали
+						float Wy = ClientRectangle.Height; // размер окна по вертикали
+
+						float aspectForm = Wx / Wy; // соотношение сторон окна рисования
+
+						float S = aspectFig < aspectForm ? Wy / Vy : Wx / Vx;
+
+						float Ty = S * Vy;
+						initT = translate(0.f, Ty) * scale(S, -S); // преобразования применяются справа налево
+						T = initT;
+
+					}
+					else if (cmd == "color") { // цвет линии
+						s >> r >> g >> b; // считываем три составляющие цвета
+					}
+					else if (cmd == "thickness") { // толщина линии
+						s >> thickness; // считываем значение толщины
+					}
+					else if (cmd == "path") { // набор точек
+						vector<vec2> vertices; // список точек ломаной
+						int N; // количество точек
+						s >> N;
+
+						string str1; // дополнительная строка для чтения из файла
+						while (N > 0) { // пока не все точки считали
+							getline(in, str1); // считываем в str1 из входного файла очередную строку
+							// так как файл корректный, то на конец файла проверять не нужно
+							if ((str1.find_first_not_of(" \t\r\n") != string::npos) && (str1[0] != '#')) {
+								// прочитанная строка не пуста и не комментарий
+								// значит в ней пара координат
+								float x, y; // переменные для считывания
+								stringstream s1(str1); // еще один строковый поток из строки str1
+								s1 >> x >> y;
+								vertices.push_back(vec2(x, y)); // добавляем точку в список
+								N--; // уменьшаем счетчик после успешного считывания точки
+							}
+						}
+						// все точки считаны, генерируем ломаную (path) и кладем ее в список figure
+						figure.push_back(path(vertices, vec3(r, g, b), thickness));
+
+					}
+
+				}
+				getline(in, str);
+
+			}
+			Refresh();
+		}
+
+	}
+	
+}
+};
 }
